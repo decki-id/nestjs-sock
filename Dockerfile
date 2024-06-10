@@ -1,16 +1,29 @@
-FROM node:20.13.1 AS base
+# build
 
-ENV NODE_ENV=production
+FROM node:20-alpine AS build
+
 WORKDIR /nestjs-sock
+
 COPY package.json .
 
-RUN npm i -g @nestjs/cli
 RUN npm i
+
 COPY . .
 
-FROM base AS dev
-CMD ["npm", "run", "start:dev"]
-
-FROM base AS prod
 RUN npm run build
+
+# production
+
+FROM node:20-alpine AS prod
+
+COPY --from=build /nava_nest/package.json ./package.json
+
+COPY --from=build /nava_nest/node_modules ./node_modules
+
+COPY --from=build /nava_nest/dist ./dist
+
+COPY --from=build /nava_nest/.env ./.env
+
+ENV NODE_ENV=production
+
 CMD ["npm", "run", "start:prod"]
